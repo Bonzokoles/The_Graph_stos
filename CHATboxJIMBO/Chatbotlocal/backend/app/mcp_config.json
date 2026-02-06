@@ -51,6 +51,41 @@
     },
     "count_words": {
       "enabled": true
+    },
+    "tavily_search": {
+      "enabled": true,
+      "api": "tavily",
+      "max_results": 20,
+      "max_age_days": 120
+    },
+    "tavily_scrape": {
+      "enabled": true,
+      "api": "tavily",
+      "only_main_content": true
+    },
+    "tavily_search_scrape": {
+      "enabled": true,
+      "api": "tavily"
+    },
+    "deep_research": {
+      "enabled": true,
+      "api": "tavily"
+    },
+    "research_status": {
+      "enabled": true
+    }
+  },
+  "external_mcp_servers": {
+    "apex-agent": {
+      "command": "node",
+      "args": [
+        "S:/THE_DEvz_HUB/ApexAgent/mcp-server/index.js"
+      ],
+      "env": {
+        "PORT": "3052"
+      },
+      "enabled": true,
+      "description": "Apex Agent - Browser automation and web scraping MCP server"
     }
   },
   "security": {
