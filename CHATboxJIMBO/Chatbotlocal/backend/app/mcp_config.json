@@ -1,0 +1,66 @@
+{
+  "mcp_tools_config": {
+    "enabled": true,
+    "safe_directory": "./mcp_workspace",
+    "max_file_size_mb": 10,
+    "web_search_enabled": true,
+    "code_execution_enabled": true,
+    "code_execution_timeout_seconds": 5,
+    "allowed_file_extensions": [
+      ".txt", ".json", ".csv", ".md", ".py", ".js", ".html", ".css"
+    ],
+    "blocked_operations": [
+      "rm -rf", "dd if=/dev/zero", "fork bomb", "sudo"
+    ]
+  },
+  "tools": {
+    "read_file": {
+      "enabled": true,
+      "max_file_size": "10MB",
+      "allowed_paths": ["./mcp_workspace", "./data", "./uploads"]
+    },
+    "write_file": {
+      "enabled": true,
+      "safe_directory_only": true
+    },
+    "list_directory": {
+      "enabled": true,
+      "max_depth": 3
+    },
+    "web_search": {
+      "enabled": true,
+      "api": "duckduckgo",
+      "timeout": 5,
+      "max_results": 5
+    },
+    "calculator": {
+      "enabled": true,
+      "allow_functions": ["sin", "cos", "tan", "sqrt", "log", "abs", "pow"]
+    },
+    "execute_python": {
+      "enabled": true,
+      "timeout": 5,
+      "sandboxed": true,
+      "blocked_imports": ["os", "sys", "subprocess", "socket"]
+    },
+    "system_info": {
+      "enabled": true
+    },
+    "get_datetime": {
+      "enabled": true
+    },
+    "count_words": {
+      "enabled": true
+    }
+  },
+  "security": {
+    "rate_limiting": {
+      "enabled": true,
+      "max_requests_per_minute": 60
+    },
+    "input_validation": {
+      "max_message_length": 10000,
+      "max_tool_args_length": 5000
+    }
+  }
+}

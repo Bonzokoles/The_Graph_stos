@@ -1,0 +1,204 @@
+---
+// Strona Astro, importuje komponent Reactowy
+import React from "react";
+import ChatWidget from "../components/ChatWidget.jsx";
+
+// Konfiguracja URL backendu z environment variables
+const backendUrl = import.meta.env.PUBLIC_BACKEND_URL || "http://localhost:8000/api";
+---
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <title>MyBonzo AI Chat - Local AI Chatbot with MCP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Local AI chatbot with MCP tools, file upload, code editor, and offline support. Install as PWA on Android/iOS!" />
+    <meta name="keywords" content="AI chatbot, MCP, local AI, offline, PWA, Android" />
+    <meta name="theme-color" content="#2196F3" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MyBonzo AI" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- iOS Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72x72.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      main {
+        max-width: 900px;
+        width: 100%;
+      }
+
+      h1 {
+        color: white;
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 2rem;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      }
+
+      #chat-root {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .backend-info {
+        color: rgba(255, 255, 255, 0.9);
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+
+      .backend-info code {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+      }
+
+      .install-prompt {
+        background: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      }
+
+      .install-prompt.show {
+        display: flex;
+      }
+
+      .install-prompt button {
+        padding: 8px 16px;
+        background: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .install-prompt button:hover {
+        background: #1976D2;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
+        h1 {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>💬 MyBonzo AI Chat</h1>
+      <p class="backend-info">
+        🔌 Backend: <code>{backendUrl}</code>
+      </p>
+
+      <!-- PWA Install Prompt -->
+      <div id="install-prompt" class="install-prompt">
+        <span>📱 Zainstaluj aplikację na swoim urządzeniu!</span>
+        <button id="install-btn">Instaluj</button>
+        <button id="dismiss-btn" style="background: #ccc; color: #333;">Później</button>
+      </div>
+
+      <div id="chat-root">
+        <ChatWidget client:load apiBaseUrl={backendUrl} />
+      </div>
+    </main>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+      // Service Worker registration
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('✅ Service Worker registered:', registration.scope);
+            })
+            .catch((error) => {
+              console.error('❌ Service Worker registration failed:', error);
+            });
+        });
+      }
+
+      // PWA Install Prompt
+      let deferredPrompt;
+      const installPrompt = document.getElementById('install-prompt');
+      const installBtn = document.getElementById('install-btn');
+      const dismissBtn = document.getElementById('dismiss-btn');
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent default browser install prompt
+        e.preventDefault();
+        deferredPrompt = e;
+
+        // Show custom install prompt
+        installPrompt.classList.add('show');
+
+        console.log('💡 PWA can be installed');
+      });
+
+      installBtn?.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+
+        // Show native install prompt
+        deferredPrompt.prompt();
+
+        // Wait for user choice
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response: ${outcome}`);
+
+        // Clear the prompt
+        deferredPrompt = null;
+        installPrompt.classList.remove('show');
+      });
+
+      dismissBtn?.addEventListener('click', () => {
+        installPrompt.classList.remove('show');
+      });
+
+      // Check if app is installed
+      window.addEventListener('appinstalled', () => {
+        console.log('✅ PWA installed successfully!');
+        installPrompt.classList.remove('show');
+        deferredPrompt = null;
+      });
+
+      // Detect if running as installed PWA
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('🚀 Running as installed PWA');
+      }
+    </script>
+  </body>
+</html>

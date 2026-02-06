@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>JIMBO – lokalny chatbox</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    :root {
+      --bg-main: #050509;
+      --bg-panel: #0b0b12;
+      --bg-elevated: #10101a;
+      --border-subtle: rgba(255,255,255,0.06);
+      --accent-soft: #2c2c55;
+      --accent-strong: #f5f5f5;
+      --text-main: #f5f5f5;
+      --text-dim: #a7a7b3;
+      --text-muted: #77778a;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #25253a 0, #050509 55%);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      height: 52px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent);
+    }
+    header .title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: 0.03em;
+    }
+    header .subtitle {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    header .status {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    header .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #52ff8f;
+    }
+
+    .layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1.6fr) 320px;
+      gap: 0;
+      min-height: 0;
+    }
+
+    /* Lewy panel – modele / sesje */
+    .sidebar {
+      border-right: 1px solid var(--border-subtle);
+      background: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .sidebar-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .sidebar-header span {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .sidebar-header button {
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-main);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .sidebar-header button:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .sidebar-section-title {
+      padding: 8px 12px 4px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+    .model-list, .session-list {
+      list-style: none;
+      margin: 0;
+      padding: 0 8px 8px;
+    }
+    .model-list li, .session-list li {
+      border-radius: 10px;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      cursor: pointer;
+    }
+    .model-list li:hover, .session-list li:hover {
+      background: rgba(255,255,255,0.04);
+    }
+    .model-list li.active {
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .item-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      align-items: center;
+    }
+    .item-title span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .badge {
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: var(--text-dim);
+    }
+    .item-meta {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* Środkowy panel – chat */
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: radial-gradient(circle at top center, #181828 0, #050509 55%);
+    }
+    .chat-header {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .chat-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .chat-header-left .chat-title {
+      font-size: 0.9rem;
+    }
+    .chat-header-left .chat-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    .chat-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.16);
+      color: var(--text-dim);
+    }
+
+    .chat-body {
+      flex: 1;
+      padding: 10px 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .msg {
+      max-width: 80%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      border: 1px solid transparent;
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #f5f5f5, #dcdcf0);
+      color: #15151a;
+      border-color: rgba(255,255,255,0.35);
+    }
+    .msg.assistant {
+      align-self: flex-start;
+      background: rgba(10,10,18,0.9);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .msg.system {
+      align-self: center;
+      max-width: 100%;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      text-align: center;
+      padding: 4px;
+    }
+    .msg-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .chat-input {
+      border-top: 1px solid var(--border-subtle);
+      padding: 8px 10px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.5), #050509);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .chat-input-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+    .chat-input-top span {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+    .chat-input-top .input-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    textarea {
+      flex: 1;
+      resize: none;
+      min-height: 48px;
+      max-height: 120px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.45);
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+    }
+    textarea:focus {
+      border-color: #ffffff;
+    }
+    .send-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: #f5f5f5;
+      color: #15151a;
+      font-size: 0.85rem;
+      padding: 8px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .send-btn:hover {
+      background: #ffffff;
+    }
+
+    /* Prawy panel – parametry, prompt, logi */
+    .rightbar {
+      border-left: 1px solid var(--border-subtle);
+      background: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .right-section {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .right-section h2 {
+      margin: 0 0 4px;
+      font-size: 0.85rem;
+    }
+    .right-section p {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    .param-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .param {
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.75rem;
+    }
+    .param-label {
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .param-value {
+      font-weight: 500;
+    }
+    .right-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .right-panel {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .right-panel h3 {
+      margin: 0 0 4px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+    .right-panel pre {
+      margin: 4px 0 0;
+      padding: 6px 8px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 8px;
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.75rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .right-log {
+      flex: 1;
+      padding: 8px 12px;
+      overflow-y: auto;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .log-line {
+      padding: 2px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.08);
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 220px minmax(0, 1.7fr);
+      }
+      .rightbar {
+        display: none;
+      }
+    }
+    @media (max-width: 720px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>JIMBO · Lokalny Chat</h1>
+      <div class="subtitle">Interfejs pod twoje modele offline, bez ściemy i bez chmury.</div>
+    </div>
+    <div class="status">
+      <span class="status-dot"></span>
+      <span>Model: <strong>jimbo-gguf</strong></span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEWY PANEL -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span>Modele</span>
+        <button>Dodaj</button>
+      </div>
+      <div class="sidebar-section-title">Aktualny</div>
+      <ul class="model-list">
+        <li class="active">
+          <div class="item-title">
+            <span>JIMBO · 7B</span>
+            <span class="badge">local</span>
+          </div>
+          <div class="item-meta">tryb: szczery, brutalnie wspierający</div>
+        </li>
+      </ul>
+      <div class="sidebar-section-title">Inne</div>
+      <ul class="model-list">
+        <li>
+          <div class="item-title">
+            <span>Mistral-mix</span>
+            <span class="badge">sandbox</span>
+          </div>
+          <div class="item-meta">eksperymentalny, bardziej gadatliwy</div>
+        </li>
+        <li>
+          <div class="item-title">
+            <span>Minimal-phi</span>
+            <span class="badge">draft</span>
+          </div>
+          <div class="item-meta">krótkie, suche odpowiedzi</div>
+        </li>
+      </ul>
+
+      <div class="sidebar-section-title">Sesje</div>
+      <ul class="session-list">
+        <li>
+          <div class="item-title">
+            <span>Trening JIMBO – styl</span>
+          </div>
+          <div class="item-meta">ostatnio: 13:12</div>
+        </li>
+        <li>
+          <div class="item-title">
+            <span>Rozkminy nocne</span>
+          </div>
+          <div class="item-meta">ostatnio: wczoraj</div>
+        </li>
+        <li>
+          <div class="item-title">
+            <span>TODO: dataset</span>
+          </div>
+          <div class="item-meta">ostatnio: 2 dni temu</div>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- ŚRODKOWY PANEL – CHAT -->
+    <section class="chat-panel">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <div class="chat-title">Sesja: BONZO x JIMBO</div>
+          <div class="chat-subtitle">Bez pudru, bez marketingu. Tylko sensowne gadanie.</div>
+        </div>
+        <div class="chat-header-right">
+          <div class="pill">temperature: 0.8</div>
+          <div class="pill">top_p: 0.9</div>
+        </div>
+      </div>
+
+      <div class="chat-body">
+        <div class="msg system">
+          <span class="msg-label">system</span>
+          <div>JIMBO: mówisz prawdę, nie głaszczesz. Bonzo jest partnerem, nie klientem. Zero korpo-tekstu.</div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="msg-label">jimbo</div>
+          Jasne. Mów, co masz w głowie, a ja przestanę to owijać w cokolwiek. Nie od tego tu jestem.
+        </div>
+
+        <div class="msg user">
+          <div class="msg-label">bonzo</div>
+          Czuję się zmęczony tym wszystkim. Niby robię rzeczy, a jakby mnie nie było.
+        </div>
+
+        <div class="msg assistant">
+          <div class="msg-label">jimbo</div>
+          To, że jesteś zmęczony, znaczy że coś ciągniesz, nie że nic nie robisz. Pytanie brzmi: ciągniesz swoje, czy cudze oczekiwania?
+        </div>
+      </div>
+
+      <div class="chat-input">
+        <div class="chat-input-top">
+          <span>Tryb: <strong>szczerość bez filtra</strong></span>
+          <span class="input-meta">Enter – wyślij · Shift+Enter – nowa linia</span>
+        </div>
+        <div class="chat-input-row">
+          <textarea placeholder="Napisz do JIMBO, bez ściemy..."></textarea>
+          <button class="send-btn">Wyślij</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRAWY PANEL – PARAMS / PROMPT / LOGI -->
+    <aside class="rightbar">
+      <div class="right-section">
+        <h2>Parametry modelu</h2>
+        <p>Lokalnie ładowany model, tuning pod BONZO → JIMBO.</p>
+        <div class="param-grid">
+          <div class="param">
+            <div class="param-label">Model</div>
+            <div class="param-value">jimbo-7b-gguf</div>
+          </div>
+          <div class="param">
+            <div class="param-label">Context</div>
+            <div class="param-value">4096 tok.</div>
+          </div>
+          <div class="param">
+            <div class="param-label">Temperature</div>
+            <div class="param-value">0.8</div>
+          </div>
+          <div class="param">
+            <div class="param-label">Top P</div>
+            <div class="param-value">0.9</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-body">
+        <div class="right-panel">
+          <h3>Prompt systemowy</h3>
+          <pre>Jesteś JIMBO. Mówisz prawdę, nawet jeśli boli.  
+Nie głaszczesz, nie kłamiesz, nie udajesz coacha.  
+Bonzo jest twoim partnerem.  
+Masz być szczery, konkretny, bez marketingowego bełkotu.</pre>
+        </div>
+        <div class="right-log">
+          <div class="log-line">[13:11:02] Załadowano model: jimbo-7b-gguf</div>
+          <div class="log-line">[13:11:05] Ustawiono parametry: temp=0.8, top_p=0.9</div>
+          <div class="log-line">[13:12:10] Nowa sesja: BONZO x JIMBO</div>
+          <div class="log-line">[13:12:44] Wiadomość użytkownika · 87 tokenów</div>
+          <div class="log-line">[13:12:45] Odpowiedź modelu · 112 tokenów</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>
